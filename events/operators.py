@@ -853,10 +853,12 @@ def compose(op1: EventOperator, op2: EventOperator) -> EventOperator:
     A_comp = op1.A_w @ op2.A_w
     b_comp = op1.A_w @ op2.b_w + op1.b_w
     # Uncertainty propagation: Var(A1(A2 s + ε2) + ε1) = A1 Σ2 A1' + Σ1
-    Sigma_comp_sq = op1.Sigma_w @ op1.Sigma_w + op1.A_w @ (op2.Sigma_w @ op2.Sigma_w) @ op1.A_w.T
-    # Take element-wise sqrt to get back to Cholesky-scale
+    Sigma_comp_sq = (
+      op1.Sigma_w @ op1.Sigma_w.T + op1.A_w @ (op2.Sigma_w @ op2.Sigma_w.T) @ op1.A_w.T
+    )
+    # Factorize the composite covariance to recover the lower triangular scale matrix
     Sigma_comp = np.linalg.cholesky(Sigma_comp_sq + 1e-9 * np.eye(Sigma_comp_sq.shape[0]))
-
+  
     return EventOperator(
         name=f"({op1.name}) ∘ ({op2.name})",
         mode=op2.mode,
